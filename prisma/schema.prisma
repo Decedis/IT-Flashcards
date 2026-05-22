@@ -1,0 +1,36 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Module {
+  id       String  @id
+  code     String
+  name     String
+  color    String
+  progress Float   @default(0)
+  terms    Term[]
+}
+
+model Term {
+  id       String @id
+  term     String
+  expand   String
+  def      String
+  topic    String
+  moduleId String
+  related  String // JSON array of term IDs
+  module   Module @relation(fields: [moduleId], references: [id])
+}
+
+model UserStats {
+  id       Int    @id @default(autoincrement())
+  streak   Int    @default(0)
+  correct  Int    @default(0)
+  wrong    Int    @default(0)
+  activity String @default("[]") // JSON array of daily card counts
+}
