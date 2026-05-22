@@ -1,4 +1,5 @@
 import type { Term, Module, AppData } from '../types'
+import { authFetch } from './authFetch'
 
 export function deriveTopics(terms: Term[]): Record<string, string[]> {
   const map: Record<string, string[]> = {}
@@ -20,7 +21,7 @@ export function buildAppData(terms: Term[], modules: Module[]): AppData {
 
 export async function fetchFromApi(): Promise<AppData | null> {
   try {
-    const [tr, mr] = await Promise.all([fetch('/api/terms'), fetch('/api/modules')])
+    const [tr, mr] = await Promise.all([authFetch('/api/terms'), authFetch('/api/modules')])
     if (!tr.ok || !mr.ok) return null
     const rawTerms: any[] = await tr.json()
     const rawModules: any[] = await mr.json()

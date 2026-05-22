@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 
+import { useAuth } from './context/auth'
 import { DataCtx } from './context/data'
 import { useFlashcardData } from './hooks/useFlashcardData'
 import { useStats } from './hooks/useStats'
@@ -11,6 +12,7 @@ import { BottomBar } from './components/BottomBar'
 import { LoadingScreen } from './components/LoadingScreen'
 import { ErrorScreen } from './components/ErrorScreen'
 
+import { LoginView } from './views/LoginView'
 import { HomeView } from './views/HomeView'
 import { ModulesView } from './views/ModulesView'
 import { Dictionary } from './views/Dictionary'
@@ -18,16 +20,20 @@ import { Practice } from './views/Practice'
 
 import type { View, PracticeMode } from './types'
 
-export default function App() {
+// ─── Authenticated shell ──────────────────────────────────────────────────────
+// Hooks are always called — extracted into AppShell so the conditional
+// `if (!token) return <LoginView />` in App doesn't violate Rules of Hooks.
+
+function AppShell() {
   const { appData, loading, error } = useFlashcardData()
   const { stats, patchStats } = useStats()
 
-  const [view, setView] = useState<View>('home')
-  const [selectedTerm, setSelectedTerm] = useState('tcp')
+  const [view, setView]                   = useState<View>('home')
+  const [selectedTerm, setSelectedTerm]   = useState('tcp')
   const [practiceModule, setPracticeModule] = useState('all')
-  const [practiceMode] = useState<PracticeMode>('mixed')
-  const [accent, setAccent] = useState('#22c55e')
-  const [retryKey, setRetryKey] = useState(0)
+  const [practiceMode]                    = useState<PracticeMode>('mixed')
+  const [accent, setAccent]               = useState('#22c55e')
+  const [retryKey, setRetryKey]           = useState(0)
 
   useEffect(() => {
     const preset = ACCENT_PRESETS[accent] || ACCENT_PRESETS['#22c55e']
@@ -52,9 +58,9 @@ export default function App() {
   if (error || !appData) return <ErrorScreen onRetry={handleRetry} />
 
   const initialStats = {
-    streak: stats?.streak ?? 0,
+    streak:  stats?.streak  ?? 0,
     correct: stats?.correct ?? 0,
-    wrong: stats?.wrong ?? 0,
+    wrong:   stats?.wrong   ?? 0,
   }
 
   return (
@@ -72,9 +78,7 @@ export default function App() {
             <HomeView onNavigate={navigate} stats={stats} />
           )}
           {view === 'modules' && (
-            <ModulesView
-              onPickModule={id => { setPracticeModule(id); setView('practice') }}
-            />
+            <ModulesView onPickModule={id => { setPracticeModule(id); setView('practice') }} />
           )}
           {view === 'dictionary' && (
             <Dictionary selectedId={selectedTerm} onSelect={setSelectedTerm} />
@@ -95,4 +99,11 @@ export default function App() {
       </div>
     </DataCtx.Provider>
   )
+}
+
+// ─── Root ─────────────────────────────────────────────────────────────────────
+
+export default function App() {
+  const { token } = useAuth()
+  return token ? <AppShell /> : <LoginView />
 }

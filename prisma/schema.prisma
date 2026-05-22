@@ -34,3 +34,10 @@ model UserStats {
   wrong    Int    @default(0)
   activity String @default("[]") // JSON array of daily card counts
 }
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String   // bcrypt hash
+  createdAt DateTime @default(now())
+}

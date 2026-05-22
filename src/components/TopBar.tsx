@@ -1,3 +1,4 @@
+import { useAuth } from '../context/auth'
 import { ACCENT_PRESETS } from '../lib/constants'
 import type { View } from '../types'
 
@@ -16,6 +17,7 @@ const NAV_ITEMS: [View, string][] = [
 ]
 
 export function TopBar({ view, accent, onViewChange, onAccentChange }: TopBarProps) {
+  const { user, logout } = useAuth()
   return (
     <header className="top-bar">
       <div className="brand">
@@ -62,9 +64,20 @@ export function TopBar({ view, accent, onViewChange, onAccentChange }: TopBarPro
           <span>synced</span>
         </div>
         <div className="user-pill">
-          <span className="user-avatar">S</span>
-          <span>student.dev</span>
+          <span className="user-avatar">{user?.username?.[0]?.toUpperCase() ?? 'S'}</span>
+          <span>{user?.username ?? 'student'}</span>
         </div>
+        <button
+          onClick={logout}
+          style={{
+            fontSize: 11, color: 'var(--fg-3)', fontFamily: 'var(--mono)',
+            padding: '4px 8px', border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)', cursor: 'pointer',
+          }}
+          title="Log out"
+        >
+          logout
+        </button>
       </div>
     </header>
   )
