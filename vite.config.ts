@@ -4,9 +4,5 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  server: {
-    proxy: {
-      '/api': 'http://localhost:3001',
-    },
-  },
+  // No proxy needed — netlify dev handles /api/* routing to edge functions
 })
