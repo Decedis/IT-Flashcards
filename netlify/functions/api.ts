@@ -1,25 +1,18 @@
-// @ts-nocheck
-// Netlify Edge Function — V8/Deno runtime (not Node.js)
-// Env vars injected by Netlify; accessed via Deno.env.get()
-// Uses Web Crypto (crypto.subtle) for password hashing — no Node.js deps
-
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { jwt, sign } from 'hono/jwt'
-import { handle } from 'hono/netlify'
-import { PrismaClient } from '@prisma/client/edge'
-import { PrismaLibSql } from '@prisma/adapter-libsql/web'
+import { handle } from 'hono/aws-lambda'
+import { PrismaClient } from '@prisma/client'
+import { PrismaLibSql } from '@prisma/adapter-libsql'
 
-const DATABASE_URL     = Deno.env.get('DATABASE_URL')     ?? ''
-const TURSO_AUTH_TOKEN = Deno.env.get('TURSO_AUTH_TOKEN') ?? ''
-const JWT_SECRET       = Deno.env.get('JWT_SECRET')       ?? 'dev-secret'
+const DATABASE_URL     = process.env['DATABASE_URL']     ?? ''
+const TURSO_AUTH_TOKEN = process.env['TURSO_AUTH_TOKEN'] ?? ''
+const JWT_SECRET       = process.env['JWT_SECRET']       ?? 'dev-secret'
 
 const adapter = new PrismaLibSql({ url: DATABASE_URL, authToken: TURSO_AUTH_TOKEN })
 const prisma  = new PrismaClient({ adapter })
 
-// ── PBKDF2 password helpers (Web Crypto — works in every runtime) ──────────
-// Format: base64(16-byte salt || 32-byte PBKDF2-SHA256 hash)
-
+// PBKDF2 password helpers — format: base64(16-byte salt || 32-byte SHA-256 @ 100k iters)
 const PBKDF2_PARAMS = { name: 'PBKDF2', iterations: 100_000, hash: 'SHA-256' }
 
 async function hashPassword(password: string): Promise<string> {
@@ -41,12 +34,8 @@ async function verifyPassword(password: string, stored: string): Promise<boolean
   return diff === 0
 }
 
-// ── App ────────────────────────────────────────────────────────────────────
-
 const app = new Hono()
 app.use('/api/*', cors())
-
-// ── Auth routes (no JWT required) ─────────────────────────────────────────
 
 app.post('/api/auth/register', async (c) => {
   const { username, password } = await c.req.json()
@@ -72,11 +61,7 @@ app.post('/api/auth/login', async (c) => {
   return c.json({ token, user: { id: user.id, username: user.username } })
 })
 
-// ── JWT middleware — protects all routes below ─────────────────────────────
-
 app.use('/api/*', jwt({ secret: JWT_SECRET, alg: 'HS256' }))
-
-// ── Protected routes ───────────────────────────────────────────────────────
 
 app.get('/api/auth/me', (c) => {
   const payload = c.get('jwtPayload')
@@ -118,4 +103,4 @@ app.patch('/api/stats', async (c) => {
   return c.json({ ...created, activity: [] })
 })
 
-export default handle(app)
+export const handler = handle(app)

@@ -2,6 +2,16 @@
   command = "npm run build"
   publish = "dist"
 
-[[edge_functions]]
-  function = "api"
-  path = "/api/*"
+[functions]
+  included_files = ["node_modules/.prisma/client/**"]
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
