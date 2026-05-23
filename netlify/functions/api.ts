@@ -103,4 +103,5 @@ app.patch('/api/stats', async (c) => {
   return c.json({ ...created, activity: [] })
 })
 
+export { app }
 export const handler = handle(app)
