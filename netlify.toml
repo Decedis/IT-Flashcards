@@ -3,6 +3,7 @@
   publish = "dist"
 
 [functions]
+  external_node_modules = ["@prisma/client", "@prisma/adapter-libsql", "@libsql/client"]
   included_files = ["node_modules/.prisma/client/**"]
 
 [[redirects]]
