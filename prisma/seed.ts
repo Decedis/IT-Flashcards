@@ -1,7 +1,20 @@
 import 'dotenv/config'
 import { PrismaClient } from '@prisma/client'
 import { PrismaLibSql } from '@prisma/adapter-libsql'
-import bcrypt from 'bcryptjs'
+import { webcrypto } from 'node:crypto'
+
+// PBKDF2 password hash — same algorithm as the edge function
+// Format: base64(16-byte salt || 32-byte PBKDF2-SHA256 hash)
+const PBKDF2_PARAMS = { name: 'PBKDF2', iterations: 100_000, hash: 'SHA-256' }
+
+async function hashPassword(password: string): Promise<string> {
+  const subtle = webcrypto.subtle
+  const salt   = webcrypto.getRandomValues(new Uint8Array(16))
+  const key    = await subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits'])
+  const hash   = new Uint8Array(await subtle.deriveBits({ ...PBKDF2_PARAMS, salt } as any, key, 256))
+  const out    = new Uint8Array(48); out.set(salt); out.set(hash, 16)
+  return Buffer.from(out).toString('base64')
+}
 
 const adapter = new PrismaLibSql({
   url: process.env['DATABASE_URL'] ?? 'file:./dev.db',
@@ -791,7 +804,7 @@ async function main() {
 
   // ── Default user ──────────────────────────────────────────────────────────
   await prisma.user.deleteMany()
-  const hash = await bcrypt.hash('password', 10)
+  const hash = await hashPassword('password')
   await prisma.user.create({ data: { username: 'student', password: hash } })
 
   const termCount = await prisma.term.count()
